@@ -15,18 +15,41 @@ export default function ContactForm() {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [messageError, setMessageError] = useState('');
   const sectionRef = useScrollReveal();
   const { toast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.id]: e.target.value
+      [id]: value
     });
+
+    // Validate message length
+    if (id === 'message') {
+      if (value.length > 0 && value.length < 10) {
+        setMessageError('Message must be at least 10 characters long');
+      } else {
+        setMessageError('');
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate message length before submission
+    if (formData.message.length < 10) {
+      setMessageError('Message must be at least 10 characters long');
+      toast({
+        title: "Validation Error",
+        description: "Please ensure your message is at least 10 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -53,6 +76,7 @@ export default function ContactForm() {
           subject: '',
           message: ''
         });
+        setMessageError(''); // Clear any validation errors
       } else {
         throw new Error(result.message);
       }
@@ -199,16 +223,28 @@ export default function ContactForm() {
                     rows={5}
                     value={formData.message}
                     onChange={handleChange}
-                    className="floating-input bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 w-full text-white placeholder-transparent focus:border-blue-400 focus:outline-none transition-colors duration-300"
+                    className={`floating-input bg-slate-800/50 border rounded-xl px-4 py-3 w-full text-white placeholder-transparent focus:outline-none transition-colors duration-300 ${
+                      messageError 
+                        ? 'border-red-500 focus:border-red-400' 
+                        : 'border-slate-600 focus:border-blue-400'
+                    }`}
                     placeholder="Your Message"
                     required
                   />
                   <label htmlFor="message" className="floating-label">Your Message</label>
+                  {messageError && (
+                    <p className="text-red-400 text-sm mt-2 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      {messageError}
+                    </p>
+                  )}
                 </div>
                 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || messageError !== ''}
                   className="w-full px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl text-white font-semibold hover:scale-105 transition-transform duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? 'Sending...' : 'Send Message'}
